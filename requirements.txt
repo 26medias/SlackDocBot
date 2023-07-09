@@ -1,0 +1,6 @@
+langchain
+deeplake
+openai
+tiktoken
+slack_sdk
+flask
