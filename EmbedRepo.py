@@ -34,3 +34,7 @@ class EmbedRepo:
   # Save the embeddings
   def save(self, texts):
     self.db.add_documents(texts)
+
+# embed = EmbedRepo(...)
+# texts = embed.split()
+# embed.save(texts)
