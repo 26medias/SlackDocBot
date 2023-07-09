@@ -10,6 +10,17 @@ BOT_TOKEN=""
 SIGNING_SECRET=""
 DEEPLAKE_USERNAME=""
 DEEPLAKE_DB=""
+CHANNELS = {
+    "C05G52A1UTC": {
+        "name": "your channel name",
+        "db": "deeplake db name"
+    },
+    "C05G4U9AYR1": {
+        "name": "your channel name",
+        "db": "deeplake db name"
+    }, 
+    ...
+}
 ```
 
 `pip install -r requirements.txt`

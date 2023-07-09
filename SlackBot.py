@@ -4,28 +4,43 @@ from flask import Flask, request, Response
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.signature import SignatureVerifier
-from env import BOT_TOKEN, SIGNING_SECRET, DEEPLAKE_USERNAME, DEEPLAKE_DB
+from env import CHANNELS, BOT_TOKEN, SIGNING_SECRET, DEEPLAKE_USERNAME, DEEPLAKE_DB
 from RepoAgent import RepoAgent
 import json
 
 
 class SlackBot:
     def __init__(self, username, db, token, secret):
-        self.agent = RepoAgent(deeplake_username=username, deeplake_db=db)
+        self.username = username
+        self.agents = {}
+        self.load_embeddings()
+        #self.agent = RepoAgent(deeplake_username=username, deeplake_db=db)
         self.slack_web_client = WebClient(token=token)
         response = self.slack_web_client.auth_test()
         self.bot_id = response['user_id']
         print("Bot ID: ", self.bot_id)
         self.signature_verifier = SignatureVerifier(secret)
+    
+    def load_embeddings(self):
+        for channel in CHANNELS:
+            print("Loading the embeddings for "+CHANNELS[channel]["name"])
+            self.agents[channel] = RepoAgent(deeplake_username=self.username, deeplake_db=CHANNELS[channel]["db"])
+        print("Embeddings loaded.")
 
     def post_agent_response(self, channel, text):
         try:
             # Post the markdown answer to the channel where the event was triggered
             print(f"#{channel}: {text}")
-            response = self.slack_web_client.chat_postMessage(
-                channel=channel,
-                text=self.agent.ask(text)
-            )
+            if channel in self.agents:
+                response = self.slack_web_client.chat_postMessage(
+                    channel=channel,
+                    text=self.agents[channel].ask(text)
+                )
+            else:
+                response = self.slack_web_client.chat_postMessage(
+                    channel=channel,
+                    text="This channel doesn't match any repo, sorry.\nTry the `*-doc` channels"
+                )
         except SlackApiError as e:
             print(f"Error: {e}")
         return True
@@ -58,7 +73,7 @@ class SlackBot:
                 return Response(payload['challenge']), 200
             # Extract the text from the payload
             event = payload.get('event', {})
-            #print("event", json.dumps(event, indent=4))
+            print("event", json.dumps(event, indent=4))
             message = event.get('text', "").replace("<@"+self.bot_id+">", "DocBot")
             channel = event.get('channel', {})
             #print("message", json.dumps(message, indent=4))
